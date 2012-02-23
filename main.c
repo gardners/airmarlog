@@ -193,6 +193,12 @@ int processLine(char *line) {
 	      pressure_in_bars,dew_point_in_centigrade,
               windbearing,windspeed_knots,
 	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
+      printf("%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
+	      year,month,day,hour,minute,second,
+	      temp_in_centigrade,relative_humidity,
+	      pressure_in_bars,dew_point_in_centigrade,
+              windbearing,windspeed_knots,
+	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
       // clear values that come from other lines after logging so that stale values don't get kept
       windspeed_knots=-1; windbearing=-1; gps_fixed=0;
       
