@@ -140,6 +140,8 @@ int day=0;
 int hour=0;
 int minute=0;
 int second=0;
+float windbearing=-1;
+float windspeed_knots=-1;
 float latitude=0;
 float longitude=0;
 float hdop=0;
@@ -183,15 +185,21 @@ int processLine(char *line) {
     if ((!log_file)||previous_hour!=hour) logRotate();
     if (log_file) {
       if (log_first_line) {
-	fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;latitude;longitude;altitude;hdop;gpsfixed\n");
+	fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;windbearing;windspeed_knots;latitude;longitude;altitude;hdop;gpsfixed\n");
       }
-      fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
+      fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
 	      year,month,day,hour,minute,second,
 	      temp_in_centigrade,relative_humidity,
 	      pressure_in_bars,dew_point_in_centigrade,
+              windbearing,windspeed_knots,
 	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
+      // clear values that come from other lines after logging so that stale values don't get kept
+      windspeed_knots=-1; windbearing=-1; gps_fixed=0;
+      
       log_first_line=0;
-      if (previous_minute!=minute) fflush(log_file);
+      // note that this only occurs if we have a GPS fix, as we use GPS time to decide
+      // when to flush.
+      if (previous_minute!=minute) { fflush(log_file); printf("Flushed log file.\n"); }
     } else printf("WARNING: no log file.\n");
     previous_hour=hour;
     previous_minute=minute;
@@ -212,7 +220,13 @@ int processLine(char *line) {
 
     if (toupper(north_south[0])=='S') latitude=-latitude;
     if (toupper(east_west[0])=='E') longitude=-longitude;
-    
+   
+// $WIMWV,141.9,R,3.0,N,A*2D 
+  } else if (sscanf(line,"$WIMWV,%f,R,%f,",
+			&windbearing,
+			&windspeed_knots
+			)==2) {
+	// wind direction and speed
   } else if (sscanf(line,"$GPZDA,%d,%d,%d,%d,",
 		    &time_of_day,
 		    &day,
