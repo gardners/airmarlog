@@ -140,6 +140,7 @@ int day=0;
 int hour=0;
 int minute=0;
 int second=0;
+time_t last_gps_fix=0;
 float windbearing=-1;
 float windspeed_knots=-1;
 float latitude=0;
@@ -174,6 +175,19 @@ int processLine(char *line) {
   int time_of_day;
   char north_south[1024];
   char east_west[1024];
+
+  if (time(0)>=(last_gps_fix+60)) {
+    // GPS time is stale -- use system time.
+    time_t now=time(0);
+    struct tm *tm=localtime(&now);
+    year=tm->tm_year+1900;
+    month=tm->tm_mon+1;
+    day=tm->tm_mday;
+    hour=tm->tm_hour;
+    minute=tm->tm_min;
+    second=tm->tm_sec;
+  }
+
 
   if (sscanf(line,"$WIMDA,%f,I,%f,B,%f,C,,,%f,,%f,",
 	     &pressure_in_inches,
@@ -223,11 +237,11 @@ int processLine(char *line) {
     hour=time_of_day/10000;
     minute=(time_of_day/100)%100;
     second=time_of_day%100;
+    last_gps_fix=time(0);
 
     if (toupper(north_south[0])=='S') latitude=-latitude;
     if (toupper(east_west[0])=='E') longitude=-longitude;
    
-// $WIMWV,141.9,R,3.0,N,A*2D 
   } else if (sscanf(line,"$WIMWV,%f,R,%f,",
 			&windbearing,
 			&windspeed_knots
@@ -282,7 +296,6 @@ int main(int argc,char **argv)
       if (linelen<1023) line[linelen++]=c;
       line[linelen]=0;
     } else usleep(10000);
-    
   }
  
   return 0;
