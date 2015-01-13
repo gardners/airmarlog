@@ -145,9 +145,23 @@ float longitude=0;
 float hdop=0;
 float altitude_metres=0;
 int gps_fixed=0;
+int previous_hour=-1;
+int previous_minute=-1;
 
 int log_first_line=1;
 FILE *log_file=NULL;
+char *log_dir=NULL;
+
+int logRotate()
+{
+  if (!log_dir) return 0;
+  if (log_file) fclose(log_file); log_file=NULL;
+  char log_name[1024];
+  snprintf(log_name,1024,"%s/wx150log-%04d.%02d.%02d.%02d",
+	   log_dir,year,month,day,hour);
+  log_file=fopen(log_name,"w");
+  return 0;
+}
 
 int processLine(char *line) {
   float temp_in_centigrade,relative_humidity,dew_point_in_centigrade;
@@ -164,15 +178,21 @@ int processLine(char *line) {
 	     &relative_humidity,
 	     &dew_point_in_centigrade)==5) {
     // meteorological data
-    if (log_first_line) {
-      fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;latitude;longitude;altitude;hdop;gpsfixed\n");
+    if ((!log_file)||previous_hour!=hour) logRotate();
+    if (log_file) {
+      if (log_first_line) {
+	fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;latitude;longitude;altitude;hdop;gpsfixed\n");
+      }
+      fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
+	      year,month,day,hour,minute,second,
+	      temp_in_centigrade,relative_humidity,
+	      pressure_in_bars,dew_point_in_centigrade,
+	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
+      log_first_line=0;
+      if (previous_minute!=minute) fflush(log_file);
     }
-    fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
-	    year,month,day,hour,minute,second,
-	    temp_in_centigrade,relative_humidity,
-	    pressure_in_bars,dew_point_in_centigrade,
-	    latitude,longitude,altitude_metres,hdop,gps_fixed);
-    log_first_line=0;
+    previous_hour=hour;
+    previous_minute=minute;
   } else if (sscanf(line,"$GPGGA,%d,%f,%[^,],%f,%[^,],%d,%d,%f,%f,",
 		    &time_of_day,
 		    &latitude,
@@ -208,10 +228,12 @@ int processLine(char *line) {
 
 int main(int argc,char **argv)
 {
-  if (argc<2) {
-    fprintf(stderr,"Usage: wx150logger <serial port>\n");
+  if (argc!=3) {
+    fprintf(stderr,"Usage: wx150logger <serial port> <log directory>\n");
     exit(-1);
   }
+
+  log_dir=argv[2];
   
   int fd=open(argv[1],O_RDWR);
   if (fd==-1) {
