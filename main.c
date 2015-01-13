@@ -30,6 +30,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 int set_nonblock(int fd)
 {
@@ -133,7 +134,74 @@ int next_char(int fd)
   return -1;
 }
 
+int year=1900;
+int month=0;
+int day=0;
+int hour=0;
+int minute=0;
+int second=0;
+float latitude=0;
+float longitude=0;
+float hdop=0;
+float altitude_metres=0;
+int gps_fixed=0;
+
+int log_first_line=1;
+FILE *log_file=NULL;
+
 int processLine(char *line) {
+  float temp_in_centigrade,relative_humidity,dew_point_in_centigrade;
+  float pressure_in_inches,pressure_in_bars;
+  int num_satellites;
+  int time_of_day;
+  char north_south[1024];
+  char east_west[1024];
+  
+  if (sscanf(line,"$$WIMDA,%f,\"I\",%f,\"B\",%f,\"C\",,,%f,,%f,",
+	     &pressure_in_inches,
+	     &pressure_in_bars,
+	     &temp_in_centigrade,
+	     &relative_humidity,
+	     &dew_point_in_centigrade)==5) {
+    // meteorological data
+    if (log_first_line) {
+      fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;latitude;longitude;altitude;hdop;gpsfixed\n");
+    }
+    fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
+	    year,month,day,hour,minute,second,
+	    temp_in_centigrade,relative_humidity,
+	    pressure_in_bars,dew_point_in_centigrade,
+	    latitude,longitude,altitude_metres,hdop,gps_fixed);
+    log_first_line=0;
+  } else if (sscanf(line,"$GPGGA,%d,%f,%[^,],%f,%[^,],%d,%d,%f,%f,",
+		    &time_of_day,
+		    &latitude,
+		    north_south,
+		    &longitude,
+		    east_west,
+		    &gps_fixed,
+		    &num_satellites,
+		    &hdop,
+		    &altitude_metres)==9) {
+    // GPS location and time of day
+    hour=time_of_day/10000;
+    minute=(time_of_day/100)%100;
+    second=time_of_day%100;
+
+    if (toupper(north_south[0])=='S') latitude=-latitude;
+    if (toupper(east_west[0])=='E') longitude=-longitude;
+    
+  } else if (sscanf(line,"$GPZDA,%d,%d,%d,%d,",
+		    &time_of_day,
+		    &day,
+		    &month,
+		    &year)==4) {
+    hour=time_of_day/10000;
+    minute=(time_of_day/100)%100;
+    second=time_of_day%100;
+  } else {
+    // unknown line -- just ignore it.
+  }
   return 0;
 }
 
