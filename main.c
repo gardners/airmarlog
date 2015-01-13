@@ -133,9 +133,18 @@ int next_char(int fd)
   return -1;
 }
 
+int processLine(char *line) {
+  return 0;
+}
+
 
 int main(int argc,char **argv)
 {
+  if (argc<2) {
+    fprintf(stderr,"Usage: wx150logger <serial port>\n");
+    exit(-1);
+  }
+  
   int fd=open(argv[1],O_RDWR);
   if (fd==-1) {
     fprintf(stderr,"Could not open serial port '%s'\n",argv[1]);
@@ -147,10 +156,21 @@ int main(int argc,char **argv)
   }  
   setup_serial_port(fd,4800);
 
+  char line[1024]; line[0]=0;
+  int linelen=0;
   while(1) {
     // XXX Read lines from WX150
+    int c=next_char(fd);
     
-    usleep(100000);
+    if (c=='\r'||c=='\n') {
+      line[linelen]=0;
+      if (linelen>0) processLine(line);
+      linelen=0;
+    } if (c>0)  {
+      if (linelen<1023) line[linelen++]=c;
+      line[linelen]=0;
+    } else usleep(10000);
+    
   }
  
   return 0;
