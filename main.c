@@ -192,7 +192,7 @@ int processLine(char *line) {
 	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
       log_first_line=0;
       if (previous_minute!=minute) fflush(log_file);
-    }
+    } else printf("WARNING: no log file.\n");
     previous_hour=hour;
     previous_minute=minute;
   } else if (sscanf(line,"$GPGGA,%d,%f,%[^,],%f,%[^,],%d,%d,%f,%f,",
