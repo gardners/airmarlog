@@ -161,6 +161,7 @@ int logRotate()
 	   log_dir,year,month,day,hour);
   log_file=fopen(log_name,"w");
   printf("logRotate: now logging to %s\n",log_name);
+  log_first_line=1;
   return 0;
 }
 
