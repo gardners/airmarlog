@@ -171,7 +171,7 @@ int processLine(char *line) {
   char north_south[1024];
   char east_west[1024];
 
-  if (sscanf(line,"$$WIMDA,%f,\"I\",%f,\"B\",%f,\"C\",,,%f,,%f,",
+  if (sscanf(line,"$WIMDA,%f,I,%f,B,%f,C,,,%f,,%f,",
 	     &pressure_in_inches,
 	     &pressure_in_bars,
 	     &temp_in_centigrade,
