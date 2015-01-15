@@ -170,7 +170,7 @@ int processLine(char *line) {
   int time_of_day;
   char north_south[1024];
   char east_west[1024];
-  
+
   if (sscanf(line,"$$WIMDA,%f,\"I\",%f,\"B\",%f,\"C\",,,%f,,%f,",
 	     &pressure_in_inches,
 	     &pressure_in_bars,
@@ -256,7 +256,7 @@ int main(int argc,char **argv)
       line[linelen]=0;
       if (linelen>0) processLine(line);
       linelen=0;
-    } if (c>0)  {
+    } else if (c>0)  {
       if (linelen<1023) line[linelen++]=c;
       line[linelen]=0;
     } else usleep(10000);
