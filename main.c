@@ -157,9 +157,10 @@ int logRotate()
   if (!log_dir) return 0;
   if (log_file) fclose(log_file); log_file=NULL;
   char log_name[1024];
-  snprintf(log_name,1024,"%s/wx150log-%04d.%02d.%02d.%02d",
+  snprintf(log_name,1024,"%s/wx150log-%04d.%02d.%02d.%02d.csv",
 	   log_dir,year,month,day,hour);
   log_file=fopen(log_name,"w");
+  printf("logRotate: now logging to %s\n",log_name);
   return 0;
 }
 
