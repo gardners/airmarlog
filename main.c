@@ -31,6 +31,10 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include "yocto_api.h"
+#include "yocto_lightsensor.h"
+
+YLightSensor *lightsensor=NULL;
 
 int set_nonblock(int fd)
 {
@@ -199,20 +203,22 @@ int processLine(char *line) {
     if ((!log_file)||previous_hour!=hour) logRotate();
     if (log_file) {
       if (log_first_line) {
-	fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;windbearing;windspeed_knots;latitude;longitude;altitude;hdop;gpsfixed\n");
+	fprintf(log_file,"year;month;day;hour;minute;second;temperature_c;relativehumidity;airpressure_b;dewpoint_c;windbearing;windspeed_knots;latitude;longitude;altitude;hdop;gpsfixed;lux\n");
       }
-      fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
+      fprintf(log_file,"%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%f\n",
 	      year,month,day,hour,minute,second,
 	      temp_in_centigrade,relative_humidity,
 	      pressure_in_bars,dew_point_in_centigrade,
               windbearing,windspeed_knots,
-	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
-      printf("%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d\n",
+	      latitude,longitude,altitude_metres,hdop,gps_fixed,
+	      lightsensor?lightsensor->get_currentValue():-1);      
+      printf("%d;%d;%d;%d;%d;%d;%f;%f;%f;%f;%f;%f;%f;%f;%f;%f;%d;%f\n",
 	      year,month,day,hour,minute,second,
 	      temp_in_centigrade,relative_humidity,
 	      pressure_in_bars,dew_point_in_centigrade,
               windbearing,windspeed_knots,
-	      latitude,longitude,altitude_metres,hdop,gps_fixed);      
+	     latitude,longitude,altitude_metres,hdop,gps_fixed,
+	      lightsensor?lightsensor->get_currentValue():-1);      
       // clear values that come from other lines after logging so that stale values don't get kept
       windspeed_knots=-1; windbearing=-1; gps_fixed=0;
       
@@ -261,7 +267,6 @@ int processLine(char *line) {
   return 0;
 }
 
-
 int main(int argc,char **argv)
 {
   if (argc!=3) {
@@ -269,6 +274,17 @@ int main(int argc,char **argv)
     exit(-1);
   }
 
+  string errmsg;
+  if (yRegisterHub("usb", errmsg) != YAPI_SUCCESS) {
+    fprintf(stderr,"yRegisterHub() failed.\n");
+  } else {
+    lightsensor=yFirstLightSensor();
+    if (!lightsensor) {
+      fprintf(stderr,"Failed to find yoctolight module.\n");
+    } else fprintf(stderr,"Found yoctolight (current value is %.1f lux)\n",
+		   lightsensor->get_currentValue());
+  }
+  
   log_dir=argv[2];
   
   int fd=open(argv[1],O_RDWR);
