@@ -1,0 +1,8 @@
+- Add firmware update API (YFirmwareUpdate class and helper method of YModules class)
+- Add thermistor configuration functions
+- Add startDataLogger and stopDataLogger to YSensor object
+- Add YBuzzer class
+- Fix handling of calibration parameters
+- Fix averaged timed reports
+- Fix set_allSetting dead lock if the JSON buffer was not valid
+- minor fixes
